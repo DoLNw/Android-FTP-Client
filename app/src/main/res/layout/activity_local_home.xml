@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    tools:context=".LocalHomeActivity"
+    >
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/my_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            >
+        </android.support.v7.widget.Toolbar>
+
+        <com.baoyz.swipemenulistview.SwipeMenuListView
+            android:id="@+id/names_list_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white"
+            android:layout_marginBottom="5dp"
+            android:divider="@drawable/list_item_divider"
+            android:dividerHeight="1.2dp">
+        </com.baoyz.swipemenulistview.SwipeMenuListView>
+
+    </LinearLayout>
+
+</RelativeLayout>
