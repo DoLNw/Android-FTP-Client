@@ -54,7 +54,6 @@ public class FolderActivity extends AppCompatActivity {
     private String folderTitle;
     private int currentSelectedCell;
     private String selectedFiename;
-    private String currentUser = "";
 
     private static final int NEW_FILE = 1;
     private static final int NEW_DIR = 2;
@@ -226,7 +225,6 @@ public class FolderActivity extends AppCompatActivity {
                 + File.separator + "ftpdownload";
 
         folderTitle = getIntent().getStringExtra("filename");
-        currentUser = getIntent().getStringExtra("username");
 
         loadingView = findViewById(R.id.avi);
         loadingView.smoothToShow();
@@ -275,7 +273,6 @@ public class FolderActivity extends AppCompatActivity {
                         intent.putExtra("filename", folderTitle + File.separator + fileName);
                         if (folderTitle.endsWith(File.separator)) {
                             intent.putExtra("filename", folderTitle + fileName);
-                            intent.putExtra("username", currentUser);
                         }
                         startActivity(intent);
                     } else if (!isDir) {
@@ -293,6 +290,7 @@ public class FolderActivity extends AppCompatActivity {
                 if (progressBar.getVisibility() == View.VISIBLE) {
                     try {
                         InitialActivity.client.abortCurrentDataTransfer(true);
+                        reConnect();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -306,6 +304,7 @@ public class FolderActivity extends AppCompatActivity {
                 if (progressBar.getVisibility() == View.VISIBLE) {
                     try {
                         InitialActivity.client.abortCurrentDataTransfer(true);
+                        reConnect();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -427,6 +426,8 @@ public class FolderActivity extends AppCompatActivity {
         } catch (Exception e) {
             handleHhowToast("下载失败");
             handleDownloadHide();
+
+            reConnect();
         }
     }
 
@@ -440,8 +441,12 @@ public class FolderActivity extends AppCompatActivity {
                 downloadSize = 0L;
                 e.printStackTrace();
 
-                handleHhowToast("下载失败");
-                handleDownloadHide();
+                if (InitialActivity.client == null) {
+                    handleHhowToast("下载失败");
+                    handleDownloadHide();
+                }
+
+                reConnect();
             }
         }
     }
@@ -641,36 +646,39 @@ public class FolderActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
+                    packageFile = new File(localHome + File.separator  + selectedFiename);
+                    needUploadSize = packageFile.length();
+
                     needContinue = false;
                     FTPFile[] ftpfiles = InitialActivity.client.list();
                     for (FTPFile ftpFile : ftpfiles) {
                         if (ftpFile.getName().equals(selectedFiename)) {
-                            remoteFile = ftpFile;
                             needContinue = true;
+                            uploadSize = ftpFile.getSize();
+
+                            //续传的时候。本地记录的大小和服务器不一致。应该是去掉了头文件之类的缘故。所以续传的时候需要获取服务器该
+                            // 文件已传的大小作为续传点而不是本地记录的已传大小。所以此处文件大小不能直接从sharedpreferences里面读出来的。
+
+                            if (needUploadSize <= uploadSize) {
+                                handleHhowToast("文件已存在");
+                            } else {
+                                Message msg = new Message();
+                                msg.what = 1111111;
+                                mHandler.sendMessage(msg);
+
+                                new ContinueUploadThread().start();
+                            }
+
+                            return;
+                        } else if (ftpfiles[ftpfiles.length-1] == ftpFile) {
+                            uploadSize = 0L;
+                            new UploadThread().start();
                         }
+
                     }
 
-                    packageFile = new File(localHome + File.separator  + selectedFiename);
-                    needUploadSize = packageFile.length();
 
-                    if (!needContinue) {
-                        uploadSize = 0L;
-                        new UploadThread().start();
-                    } else {
-                        //续传的时候。本地记录的大小和服务器不一致。应该是去掉了头文件之类的缘故。所以续传的时候需要获取服务器该
-                        // 文件已传的大小作为续传点而不是本地记录的已传大小。所以此处文件大小不能直接从sharedpreferences里面读出来的。
 
-                        uploadSize = remoteFile.getSize();
-                        if (needUploadSize == uploadSize) {
-                            handleHhowToast("文件已存在");
-                        } else {
-                            Message msg = new Message();
-                            msg.what = 1111111;
-                            mHandler.sendMessage(msg);
-
-                            new ContinueUploadThread().start();
-                        }
-                    }
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -694,7 +702,7 @@ public class FolderActivity extends AppCompatActivity {
                 e.printStackTrace();
             }  catch (Exception e){
                 e.printStackTrace();
-//                Thread.currentThread().interrupt();
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -709,6 +717,7 @@ public class FolderActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                Thread.currentThread().interrupt();
             }
         }
     }
@@ -759,12 +768,16 @@ public class FolderActivity extends AppCompatActivity {
         public void aborted() {
             handleHhowToast("下载停止");
             handleDownloadHide();
+
+            reConnect();
         }
 
         @Override
         public void failed() {
             handleHhowToast("下载失败");
             handleDownloadHide();
+
+            reConnect();
         }
     }
 
@@ -798,12 +811,16 @@ public class FolderActivity extends AppCompatActivity {
 
             handleUploadHide();
             handleHhowToast("上传停止");
+
+            reConnect();
         }
         public void failed() {
             unregisterReceiver(connctionChangeReceiver);
 
             handleUploadHide();
             handleHhowToast("上传失败");
+
+            reConnect();
         }
     }
 
@@ -817,6 +834,7 @@ public class FolderActivity extends AppCompatActivity {
             if (!(activeNetInfo != null && activeNetInfo.isConnected())) {
                 try {
                     InitialActivity.client.abortCurrentDataTransfer(true);
+                    reConnect();
 
                     Intent intent2 = new Intent();
                     intent2.setAction("android.intent.action.MAIN");
@@ -857,7 +875,7 @@ public class FolderActivity extends AppCompatActivity {
                     break;
                 case Helper.HIDE_LOAD_VIEW:
                     loadingView.smoothToHide();
-                    loadText.setText("当前用户: " + currentUser);
+                    loadText.setText("当前用户: " + InitialActivity.currentUser);
                     progressBar.setVisibility(View.INVISIBLE);
                     break;
 
@@ -872,7 +890,7 @@ public class FolderActivity extends AppCompatActivity {
                     progressBar.setProgress((int)msg.obj);
                     break;
                 case Helper.DOWNLOAD_HIDE:
-                    loadText.setText("当前用户: " + currentUser);
+                    loadText.setText("当前用户: " + InitialActivity.currentUser);
                     downLoadingView.smoothToHide();
                     progressBar.setVisibility(View.INVISIBLE);
                     break;
@@ -892,7 +910,7 @@ public class FolderActivity extends AppCompatActivity {
                     break;
                 case Helper.UPLOAD_HIDE:
                     uploadView.smoothToHide();
-                    loadText.setText("当前用户: " + currentUser);
+                    loadText.setText("当前用户: " + InitialActivity.currentUser);
                     progressBar.setVisibility(View.INVISIBLE);
                     break;
                 case 1111111:
@@ -906,7 +924,7 @@ public class FolderActivity extends AppCompatActivity {
                     break;
                 case 2222222:
                     AlertDialog.Builder alert2 = new AlertDialog.Builder(FolderActivity.this);
-                    alert2.setTitle("文件无法查看").setMessage("文件过大或该文件格式不支持查看，请使用其他App打开该文件");
+                    alert2.setTitle("文件下载完成").setMessage("该文件格式不支持查看或文件过大，请使用其他App打开该文件");
                     alert2.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -1018,6 +1036,7 @@ public class FolderActivity extends AppCompatActivity {
                 public void onClick(DialogInterface dialog, int which) {
                     try {
                         InitialActivity.client.abortCurrentDataTransfer(true);
+                        reConnect();
                         finish();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -1032,7 +1051,20 @@ public class FolderActivity extends AppCompatActivity {
             }).create().show();
         } else {
             super.onBackPressed();
-
         }
+    }
+
+    void reConnect() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    InitialActivity.login();
+                    InitialActivity.client.changeDirectory(folderTitle);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 }

@@ -38,6 +38,16 @@ import it.sauronsoftware.ftp4j.FTPClient;
 
 public class InitialActivity extends AppCompatActivity {
     public static FTPClient client;
+    public static String currentUser;
+    public static String currentHost;
+    public static String currentPassword;
+    public static int currentPort = 21;
+
+    public static void login() throws Exception {
+        client = new FTPClient();
+        client.connect(currentHost, currentPort);
+        client.login(currentUser, currentPassword);
+    }
 
     private Toolbar toolbar;
 
@@ -80,6 +90,8 @@ public class InitialActivity extends AppCompatActivity {
             try {
                 InitialActivity.client.disconnect(false);
                 InitialActivity.client = null;
+
+                showToast("退出登录");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -161,9 +173,10 @@ public class InitialActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            InitialActivity.client = new FTPClient();
-                            InitialActivity.client.connect(hostNamesCopy.get(position), 21);
-                            InitialActivity.client.login(userNamesCopy.get(position), userPasswordsCopy.get(position));
+                            currentUser = userNamesCopy.get(position);
+                            currentHost = hostNamesCopy.get(position);
+                            currentPassword = userPasswordsCopy.get(position);
+                            login();
 
                             if (InitialActivity.client.isConnected()) {
                                 if (canLoginCopy.get(position).contentEquals("false")) {
@@ -184,7 +197,6 @@ public class InitialActivity extends AppCompatActivity {
 
                                 Intent intent = new Intent(InitialActivity.this, FolderActivity.class);
                                 intent.putExtra("filename", File.separator);
-                                intent.putExtra("username", userNamesCopy.get(position));
                                 startActivity(intent);
                             } else {
                                 showToast("登录失败");
@@ -291,9 +303,10 @@ public class InitialActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 try {
-                                    InitialActivity.client = new FTPClient();
-                                    InitialActivity.client.connect(hostNameString, 21);
-                                    InitialActivity.client.login(userNameString, userPasswordString);
+                                    currentUser = userNameString;
+                                    currentHost = hostNameString;
+                                    currentPassword = userPasswordString;
+                                    login();
 
                                     if (InitialActivity.client.isConnected()) {
                                         canLoginCopy.remove(canLoginCopy.size()-1);
@@ -308,7 +321,6 @@ public class InitialActivity extends AppCompatActivity {
 
                                         Intent intent = new Intent(InitialActivity.this, FolderActivity.class);
                                         intent.putExtra("filename", File.separator);
-                                        intent.putExtra("username", userNameString);
                                         startActivity(intent);
                                     } else {
                                         showToast("登录失败");
