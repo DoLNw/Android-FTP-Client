@@ -12,11 +12,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".FailedActivity">
-            <intent-filter>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
-            </intent-filter>
-        </activity>
         <activity android:name=".InitialActivity" />
         <activity android:name=".LocalHomeActivity" />
         <activity android:name=".PDFActivity" />

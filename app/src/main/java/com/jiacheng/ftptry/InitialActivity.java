@@ -98,7 +98,10 @@ public class InitialActivity extends AppCompatActivity {
         }
     }
 
+    //此方法实现了”我的ftp”这个ListView的数据显示
     private void setupData() {
+
+        //以下是从sharedpreference中获取主机号、用户名、用户密码、是否可登录的数据
         hostNamesCopy = new ArrayList<>(Arrays.asList(getSharedPreference("host_name")));
         userNamesCopy = new ArrayList<>(Arrays.asList(getSharedPreference("user_name")));
         userPasswordsCopy = new ArrayList<>(Arrays.asList(getSharedPreference("user_password")));
@@ -108,6 +111,7 @@ public class InitialActivity extends AppCompatActivity {
             return;
         }
 
+        //遍历数组， 将数据赋值给ftpSimpleAdaptList， 通过绑定的adapter告知listview更新数据
         for (int i=0; i<hostNamesCopy.size(); i++) {
             HashMap<String, Object> hashMap
                     = new HashMap<>();
@@ -120,6 +124,7 @@ public class InitialActivity extends AppCompatActivity {
             ftpSimpleAdaptList.add(hashMap);
         }
 
+        //通知Listview更新数据
         ftpSimpleAdapter.notifyDataSetChanged();
     }
 
@@ -155,6 +160,7 @@ public class InitialActivity extends AppCompatActivity {
     }
 
     private void setListeners() {
+        //编写”我的本地文件“的点击响应事件：页面跳转进入LocalHomeActivity
         homeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -163,6 +169,7 @@ public class InitialActivity extends AppCompatActivity {
             }
         });
 
+        //编写“ftplistView”的点击监听器：点击相应的view使相应的用户登录ftp
         ftpListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
@@ -173,9 +180,13 @@ public class InitialActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
+
+                            //获取该用户的密码账号
                             currentUser = userNamesCopy.get(position);
                             currentHost = hostNamesCopy.get(position);
                             currentPassword = userPasswordsCopy.get(position);
+
+                            //登录函数
                             login();
 
                             if (InitialActivity.client.isConnected()) {
@@ -226,18 +237,30 @@ public class InitialActivity extends AppCompatActivity {
             }
         });
 
+
+        //右滑删除按钮实现
         SwipeMenuCreator creator = new SwipeMenuCreator() {
             @Override
             public void create(SwipeMenu menu) {
+
+                //设置红色背景
                 SwipeMenuItem deleteItem = new SwipeMenuItem(getApplicationContext());
                 deleteItem.setBackground(new ColorDrawable(Color.rgb(0xF9,
                         0x3F, 0x25)));
                 deleteItem.setWidth(200);
+
+                //设置删除图标
                 deleteItem.setIcon(R.drawable.delete);
+
+                //添加删除按钮
                 menu.addMenuItem(deleteItem);
             }
         };
+
+        //将相应的删除按钮绑定到ftpListView
         ftpListView.setMenuCreator(creator);
+
+        //实现删除按钮的内容
         ftpListView.setOnMenuItemClickListener(new SwipeMenuListView.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
@@ -253,6 +276,8 @@ public class InitialActivity extends AppCompatActivity {
                         setSharedPreferenceValues("user_password", userPasswordsCopy);
 
                         ftpSimpleAdaptList.remove(position);
+
+                        //删除了一个view， 通知更新
                         ftpSimpleAdapter.notifyDataSetChanged();
 
                     default:
@@ -423,6 +448,8 @@ public class InitialActivity extends AppCompatActivity {
             }
         }
     };
+
+    //短通知
     private void showToast(String message) {
         Message msg = new Message();
         msg.what = Helper.SHOW_TOAST;
@@ -430,12 +457,14 @@ public class InitialActivity extends AppCompatActivity {
         mHandler.sendMessage(msg);
     }
 
+    //隐藏加载图标
     private void hideLoadView() {
         Message msg = new Message();
         msg.what = Helper.HIDE_LOAD_VIEW;
         mHandler.sendMessage(msg);
     }
 
+    //通知listview更新
     private void notifyDataChanged() {
         Message msg = new Message();
         msg.what = Helper.NOTIFY_DATA_CHANGED;

@@ -379,11 +379,13 @@ public class FolderActivity extends AppCompatActivity {
 
     private void prepareDownload(final String originFilename) {
         try {
+            //确定ftp服务器上该文件路径
             serverPath = folderTitle + File.separator + originFilename;//服务器上的文件
             if (folderTitle.endsWith(File.separator)) {
                 serverPath = folderTitle + originFilename;
             }
 
+            //获取本地下载文件夹
             final File file = new File(localHome);
             if (!file.exists()) {
                 file.mkdirs();
@@ -393,10 +395,12 @@ public class FolderActivity extends AppCompatActivity {
 
             file1 = new File(file, selectedFiename);
 
+            //检测是否存在，如存在，询问是否覆盖
             if (file1.exists()) {
                 digGeneral = new AlertDialog.Builder(FolderActivity.this);
                 digGeneral.setTitle("文件与本地文件重复");
                 digGeneral.setMessage("此文件在本地文件中已存在，需要覆盖还是创建副本？");
+
                 digGeneral.setPositiveButton("创建副本", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(final DialogInterface dialog, int which) {
@@ -436,6 +440,7 @@ public class FolderActivity extends AppCompatActivity {
         public void run() {
             super.run();
             try {
+                //DialogInterface.OnClickListener是下载监听器，在监听器中实现下载进度条
                 InitialActivity.client.download(serverPath, file1, new MyDownloadTransferListener());
             } catch (Exception e) {
                 downloadSize = 0L;
@@ -462,11 +467,7 @@ public class FolderActivity extends AppCompatActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        return super.onPrepareOptionsMenu(menu);
-    }
-
+    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -477,6 +478,12 @@ public class FolderActivity extends AppCompatActivity {
         }
 
     }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        return super.onPrepareOptionsMenu(menu);
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -734,9 +741,9 @@ public class FolderActivity extends AppCompatActivity {
 
         @Override
         public void transferred(int i) {
+            //计算出下载百分比，在进度条显示
             downloadSize += i;
             int percent = (int)(downloadSize*100/(needDownloadSize*1.0));
-
             handleNotifyDownChanged(percent);
         }
 

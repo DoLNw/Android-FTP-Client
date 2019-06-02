@@ -69,6 +69,7 @@ public class LocalHomeActivity extends AppCompatActivity {
             file1.mkdirs();
         }
 
+        //遍历本地文件数组，通过后缀名判断文件格式，展示不同的文件格式图标
         for(File file: file1.listFiles()) {
             HashMap<String, Object> hashMap
                     = new HashMap<>();
